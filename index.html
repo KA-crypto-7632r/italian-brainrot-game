@@ -137,84 +137,136 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <script>
     const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzE4SL1LcSnLQMnNpzXv6SzP1Uw3-hcJk2f-rM-6aYPeeOSu8d9pLXdiomDVhjWmm1I/exec?mode=api';
+    const CACHE_KEY = 'brainrot_catalog';
+    const CACHE_TS_KEY = 'brainrot_catalog_ts';
+    const CACHE_TTL = 60 * 60 * 1000; // 1時間キャッシュ有効
 
     let catalog = [];
     let qList = [];
     let qIdx = 0;
     let combo = 0;
+    let initialized = false;
+    let swipeInited = false;
 
+    // ---- 初回起動（キャッシュなし） ----
     function initApp(data) {
       catalog = data;
       qList = [...data].sort(() => Math.random() - 0.5);
+      qIdx = 0;
       renderQuiz();
+      preloadAhead();
       renderGrid(data);
       renderChoice();
-      initSwipe();
+      if (!swipeInited) { initSwipe(); swipeInited = true; }
       document.getElementById('loadingScreen').style.display = 'none';
+      initialized = true;
+    }
+
+    // ---- バックグラウンド更新（ゲーム状態を壊さない） ----
+    function updateCatalogSilently(data) {
+      catalog = data;
+      // qListは使い切ったカード分だけ差し替え（現在位置は保持）
+      var remaining = data.filter(function(d) {
+        return !qList.slice(0, qIdx).some(function(q) { return q.id === d.id; });
+      });
+      qList = qList.slice(0, qIdx).concat(remaining.sort(() => Math.random() - 0.5));
+      renderGrid(data);
     }
 
     window.onload = function() {
-      // cache hit
-      var cached = localStorage.getItem('brainrot_catalog');
+      var cached = localStorage.getItem(CACHE_KEY);
+      var cachedTs = parseInt(localStorage.getItem(CACHE_TS_KEY) || '0');
+      var now = Date.now();
+
+      // キャッシュがあれば即時表示
       if (cached) {
-        try { initApp(JSON.parse(cached)); } catch(e) {}
+        try {
+          initApp(JSON.parse(cached));
+        } catch(e) { cached = null; }
       }
-      // fetch latest & update cache
-      fetch(GAS_API_URL)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            localStorage.setItem('brainrot_catalog', JSON.stringify(data));
-            initApp(data);
-          }
-        })
-        .catch(err => {
-          console.error('API fetch error:', err);
-          if (!cached) {
-            document.getElementById('loadingScreen').innerHTML = '<p style="color:#ff0055;">データの読み込みに失敗しました。<br>リロードしてください。</p>';
-          }
-        });
+
+      // キャッシュが古い or 無い場合のみAPIを叩く
+      if (!cached || (now - cachedTs > CACHE_TTL)) {
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() { controller.abort(); }, 8000); // 8秒タイムアウト
+
+        fetch(GAS_API_URL, { signal: controller.signal })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            clearTimeout(timeoutId);
+            if (!Array.isArray(data)) return;
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+            localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
+            if (!initialized) {
+              initApp(data);
+            } else {
+              updateCatalogSilently(data);
+            }
+          })
+          .catch(function(err) {
+            clearTimeout(timeoutId);
+            if (!initialized) {
+              document.getElementById('loadingScreen').innerHTML =
+                '<p style="color:#ff0055; text-align:center; padding:20px;">データの読み込みに失敗しました。<br><br>' +
+                '<button onclick="location.reload()" style="background:var(--neon);border:none;padding:10px 20px;border-radius:10px;font-weight:bold;cursor:pointer;">リロード</button></p>';
+            }
+          });
+      }
     };
 
     function switchMode(id) {
-      document.querySelectorAll('.mode-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.mode-content').forEach(function(el) { el.classList.remove('active'); });
+      document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
       document.getElementById(id).classList.add('active');
       event.target.classList.add('active');
     }
 
     function renderQuiz() {
-      const item = qList[qIdx];
-      const card = document.getElementById('quizCard');
+      var item = qList[qIdx];
+      var card = document.getElementById('quizCard');
       card.classList.remove('flipped');
-      document.getElementById('qFront').innerHTML = '<img src="' + item.image + '">';
+      document.getElementById('qFront').innerHTML = '<img src="' + item.image + '" decoding="async">';
       document.getElementById('qBack').innerHTML =
         '<div class="ans-inner" style="border:none;">' +
-          '<img src="' + item.image + '" class="ans-mini-img">' +
+          '<img src="' + item.image + '" class="ans-mini-img" decoding="async">' +
           '<div class="ans-name">' + item.name + '</div>' +
           '<div class="ans-desc">' + item.description + '</div>' +
         '</div>';
     }
 
+    // 次の3枚をプリロード
+    function preloadAhead() {
+      for (var i = 1; i <= 3; i++) {
+        var next = qList[(qIdx + i) % qList.length];
+        if (next) { var img = new Image(); img.src = next.image; }
+      }
+    }
+
     function initSwipe() {
-      let x = 0;
-      const zone = document.getElementById('swipeZone');
-      zone.addEventListener('touchstart', function(e) { x = e.touches[0].pageX; });
+      var startX = 0, startY = 0;
+      var zone = document.getElementById('swipeZone');
+      zone.addEventListener('touchstart', function(e) {
+        startX = e.touches[0].pageX;
+        startY = e.touches[0].pageY;
+      }, { passive: true });
       zone.addEventListener('touchend', function(e) {
-        let diff = e.changedTouches[0].pageX - x;
-        if (diff < -60) { qIdx = (qIdx + 1) % qList.length; renderQuiz(); }
-        else if (diff > 60) { qIdx = (qIdx - 1 + qList.length) % qList.length; renderQuiz(); }
-      });
+        var dx = e.changedTouches[0].pageX - startX;
+        var dy = e.changedTouches[0].pageY - startY;
+        if (Math.abs(dx) < Math.abs(dy) * 1.2) return; // 縦スクロールは無視
+        if (dx < -60) { qIdx = (qIdx + 1) % qList.length; renderQuiz(); preloadAhead(); }
+        else if (dx > 60) { qIdx = (qIdx - 1 + qList.length) % qList.length; renderQuiz(); preloadAhead(); }
+      }, { passive: true });
     }
 
     function renderChoice() {
-      const target = catalog[Math.floor(Math.random() * catalog.length)];
-      const others = catalog.filter(function(i) { return i.id !== target.id; }).sort(function() { return Math.random() - 0.5; }).slice(0, 2);
-      const options = [target].concat(others).sort(function() { return Math.random() - 0.5; });
+      var target = catalog[Math.floor(Math.random() * catalog.length)];
+      var others = catalog.filter(function(i) { return i.id !== target.id; })
+        .sort(function() { return Math.random() - 0.5; }).slice(0, 2);
+      var options = [target].concat(others).sort(function() { return Math.random() - 0.5; });
       document.getElementById('choicePrompt').innerText = '「' + target.name + '」はどれ？';
-      var list = document.getElementById('choiceList');
-      list.innerHTML = options.map(function(i) {
-        return '<div class="choice-btn" onclick="check(this,' + (i.id === target.id) + ')"><img src="' + i.image + '"></div>';
+      document.getElementById('choiceList').innerHTML = options.map(function(i) {
+        return '<div class="choice-btn" onclick="check(this,' + (i.id === target.id) + ')">' +
+          '<img src="' + i.image + '" decoding="async"></div>';
       }).join('');
     }
 
@@ -222,16 +274,16 @@
       var root = document.getElementById('bodyRoot');
       if (ok) {
         combo++;
-        el.style.borderColor = "#4cd964";
+        el.style.borderColor = '#4cd964';
         confetti({ particleCount: 100 + combo, spread: 70, origin: { y: 0.6 } });
         updateRank();
         setTimeout(renderChoice, 800);
       } else {
         combo = 0;
-        el.style.borderColor = "#ff3b30";
+        el.style.borderColor = '#ff3b30';
         root.className = '';
         updateRank();
-        setTimeout(function() { el.style.borderColor = "transparent"; }, 400);
+        setTimeout(function() { el.style.borderColor = 'transparent'; }, 400);
       }
     }
 
@@ -240,34 +292,31 @@
       var val = document.getElementById('comboVal');
       var root = document.getElementById('bodyRoot');
       val.innerText = combo;
-
-      if (combo >= 50) { label.innerText = "ランク：【神】"; document.getElementById('masterScreen').style.display = 'flex'; }
-      else if (combo >= 40) { label.innerText = "ランク：【極】"; root.className = 'rank-40'; }
-      else if (combo >= 30) { label.innerText = "ランク：【金】"; root.className = 'rank-30'; }
-      else if (combo >= 20) { label.innerText = "ランク：【銀】"; root.className = 'rank-20'; }
-      else if (combo >= 10) { label.innerText = "ランク：【銅】"; root.className = 'rank-10'; }
-      else { label.innerText = "ランク：なし"; }
+      if (combo >= 50) { label.innerText = 'ランク：【神】'; document.getElementById('masterScreen').style.display = 'flex'; }
+      else if (combo >= 40) { label.innerText = 'ランク：【極】'; root.className = 'rank-40'; }
+      else if (combo >= 30) { label.innerText = 'ランク：【金】'; root.className = 'rank-30'; }
+      else if (combo >= 20) { label.innerText = 'ランク：【銀】'; root.className = 'rank-20'; }
+      else if (combo >= 10) { label.innerText = 'ランク：【銅】'; root.className = 'rank-10'; }
+      else { label.innerText = 'ランク：なし'; }
     }
 
     function renderGrid(data) {
-      var grid = document.getElementById('gridDisplay');
-      grid.innerHTML = data.map(function(i) {
-        return '<div class="thumb-card" onclick="popPopDetail(' + catalog.indexOf(i) + ')"><img src="' + i.image + '"></div>';
+      document.getElementById('gridDisplay').innerHTML = data.map(function(i) {
+        return '<div class="thumb-card" onclick="popPopDetail(' + catalog.indexOf(i) + ')">' +
+          '<img src="' + i.image + '" loading="lazy" decoding="async"></div>';
       }).join('');
     }
 
     function popPopDetail(idx) {
       var i = catalog[idx];
-      var overlay = document.getElementById('modalOverlay');
-      var body = document.getElementById('modalBody');
-      body.innerHTML =
+      document.getElementById('modalBody').innerHTML =
         '<div class="ans-inner">' +
-          '<img src="' + i.image + '" class="ans-mini-img">' +
+          '<img src="' + i.image + '" class="ans-mini-img" decoding="async">' +
           '<div class="ans-name">' + i.name + '</div>' +
           '<div class="ans-desc">' + i.description + '</div>' +
           '<div style="margin-top:20px; font-size:0.8rem; color:#888;">タップして もどる</div>' +
         '</div>';
-      overlay.style.display = 'flex';
+      document.getElementById('modalOverlay').style.display = 'flex';
     }
 
     function closePopDetail() {
@@ -276,10 +325,9 @@
 
     function filterGrid() {
       var q = document.getElementById('searchInput').value.toLowerCase();
-      var filtered = catalog.filter(function(i) {
+      renderGrid(catalog.filter(function(i) {
         return i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q);
-      });
-      renderGrid(filtered);
+      }));
     }
   </script>
 </body>
