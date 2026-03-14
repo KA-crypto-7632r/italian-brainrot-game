@@ -3,14 +3,284 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-    <title>Italian Brainrot Game</title>
+<title>Italian Brainrot Game</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#000428}
-iframe{width:100%;height:100%;border:none;display:block}
+  * { box-sizing: border-box; }
+  :root {
+    --bg: linear-gradient(135deg, #000428 0%, #004e92 100%);
+    --neon: #00ffcc; --accent: #ff0055; --gold: #ffd700;
+  }
+  body {
+    font-family: -apple-system, sans-serif; background: var(--bg); color: white;
+    margin: 0; padding: 0 0 120px 0; min-height: 100vh; overflow-x: hidden; transition: 0.5s;
+  }
+
+  body.rank-10 { background: linear-gradient(135deg, #2c3e50, #bdc3c7); }
+  body.rank-20 { background: linear-gradient(135deg, #8e9eab, #eef2f3); }
+  body.rank-30 { background: linear-gradient(135deg, #4b1212, #ff4500); }
+  body.rank-40 { background: linear-gradient(135deg, #000000, #4b1212); animation: pulse 2s infinite; }
+  @keyframes pulse { 0% { filter: brightness(1); } 50% { filter: brightness(1.3); } 100% { filter: brightness(1); } }
+
+  .app-header { text-align: center; padding: 15px 0; background: rgba(0,0,0,0.5); border-bottom: 2px solid var(--neon); }
+  .main-title { font-size: 1.2rem; font-weight: 900; color: var(--neon); text-shadow: 0 0 8px var(--neon); }
+
+  .nav-tabs { display: flex; justify-content: center; gap: 5px; padding: 10px; }
+  .tab-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px; border-radius: 15px; flex: 1; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+  .tab-btn.active { background: var(--neon); color: #000; border-color: var(--neon); }
+
+  .container { width: 100%; max-width: 450px; margin: 0 auto; padding: 0 16px; }
+  .mode-content { display: none; }
+  .mode-content.active { display: block; }
+
+  .guide-area { display: flex; justify-content: space-between; padding: 10px 5px; }
+  .guide-text { font-size: 0.8rem; font-weight: bold; color: var(--neon); }
+  .flip-arrow { display: inline-block; transform: scaleX(-1); }
+
+  .sq-frame { background: white; border-radius: 15px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 4px solid var(--neon); width: 100%; }
+  .sq-frame img { width: 92%; height: 92%; object-fit: contain; }
+
+  .ans-inner { padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; color: #333; background: white; border-radius: 20px; border: 4px solid var(--neon); max-height: 85vh; overflow-y: auto; }
+  .ans-mini-img { width: 110px; height: 110px; object-fit: contain; border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; }
+  .ans-name { font-size: 1.8rem; font-weight: 900; color: var(--accent); margin-bottom: 35px; line-height: 1.1; }
+  .ans-desc { font-size: 0.9rem; line-height: 1.6; text-align: left; border-top: 1px solid #eee; padding-top: 20px; width: 100%; }
+
+  .quiz-container { perspective: 1000px; width: 100%; height: 400px; margin-top: 5px; }
+  .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s; cursor: pointer; }
+  .card.flipped { transform: rotateY(180deg); }
+  .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 20px; border: 4px solid var(--neon); overflow: hidden; background: white; }
+  .card-back { transform: rotateY(180deg); }
+
+  .score-bar { text-align: center; padding: 10px; margin-bottom: 10px; border-radius: 12px; background: rgba(0,0,0,0.4); border: 2px solid var(--neon); }
+  .combo-num { font-size: 2rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 10px var(--gold); display: block; }
+  .choice-btn { background: white; border-radius: 12px; height: 140px; display: flex; align-items: center; justify-content: center; border: 4px solid transparent; padding: 5px; margin-bottom: 10px; }
+  .choice-btn img { max-width: 95%; max-height: 95%; object-fit: contain; }
+
+  .search-box { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid var(--neon); background: rgba(0,0,0,0.6); color: white; margin-bottom: 15px; font-size: 1rem; }
+  .thumb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .thumb-card { background: white; aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 5px; overflow: hidden; }
+  .thumb-card img { width: 100%; height: 100%; object-fit: contain; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
+
+  .master-screen { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; }
+
+  .loading-screen { display: flex; position: fixed; inset: 0; background: var(--bg); z-index: 4000; flex-direction: column; align-items: center; justify-content: center; }
+  .loading-screen .spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.2); border-top-color: var(--neon); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
-<body>
-<iframe src="https://script.google.com/macros/s/AKfycbzDWQqE4_qbjHcnHXCA-K_dACN5guo-ySbqeZzA1VkH7zgCCgg9KnZVYgnALwz1j767/exec" allow="autoplay"></iframe>
+<body id="bodyRoot">
+
+  <div id="loadingScreen" class="loading-screen">
+    <div class="spinner"></div>
+    <p style="margin-top:20px; color: var(--neon);">Loading...</p>
+  </div>
+
+  <div class="app-header">
+    <span class="main-title">イタリアンブレインロット図鑑</span>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchMode('mode-quiz')">めくって</button>
+    <button class="tab-btn" onclick="switchMode('mode-choice')">えらんで</button>
+    <button class="tab-btn" onclick="switchMode('mode-grid')">ずかん</button>
+  </div>
+
+  <div class="container">
+    <div id="mode-quiz" class="mode-content active">
+      <div style="text-align:center; padding:5px 0;" class="guide-text">タップして めくってみよう</div>
+      <div class="quiz-container" id="swipeZone">
+        <div class="card" id="quizCard" onclick="this.classList.toggle('flipped')">
+          <div class="card-face card-front sq-frame" id="qFront" style="border:none;"></div>
+          <div class="card-face card-back" id="qBack"></div>
+        </div>
+      </div>
+      <div class="guide-area">
+        <div class="guide-text"><span class="flip-arrow">➜</span> もどる</div>
+        <div class="guide-text">つぎへ スライド ➜</div>
+      </div>
+    </div>
+
+    <div id="mode-choice" class="mode-content">
+      <div class="score-bar">
+        <span id="rankLabel" style="font-weight:bold;">ランク：なし</span>
+        <span class="combo-num" id="comboVal">0</span>
+        <span style="font-size:0.7rem;">れんぞく せいかいしよう！</span>
+      </div>
+      <div id="choicePrompt" style="text-align:center; margin-bottom:10px; font-weight:bold; color:var(--neon);"></div>
+      <div id="choiceList"></div>
+    </div>
+
+    <div id="mode-grid" class="mode-content">
+      <input type="text" id="searchInput" class="search-box" placeholder="なまえで さがしてみよう..." oninput="filterGrid()">
+      <div class="thumb-grid" id="gridDisplay"></div>
+    </div>
+  </div>
+
+  <div id="modalOverlay" class="modal-overlay" onclick="closePopDetail()">
+    <div id="modalBody" onclick="event.stopPropagation()"></div>
+  </div>
+
+  <div id="masterScreen" class="master-screen">
+    <h1 style="color:gold; font-size:4rem; margin:0;">【神】</h1>
+    <p>マスター認定！</p>
+    <button class="tab-btn active" style="max-width:200px;" onclick="location.reload()">もういちど</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <script>
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzDWQqE4_qbjHcnHXCA-K_dACN5guo-ySbqeZzA1VkH7zgCCgg9KnZVYgnALwz1j767/exec?mode=api';
+
+    let catalog = [];
+    let qList = [];
+    let qIdx = 0;
+    let combo = 0;
+
+    function initApp(data) {
+      catalog = data;
+      qList = [...data].sort(() => Math.random() - 0.5);
+      renderQuiz();
+      renderGrid(data);
+      renderChoice();
+      initSwipe();
+      document.getElementById('loadingScreen').style.display = 'none';
+    }
+
+    window.onload = function() {
+      // cache hit
+      var cached = localStorage.getItem('brainrot_catalog');
+      if (cached) {
+        try { initApp(JSON.parse(cached)); } catch(e) {}
+      }
+      // fetch latest & update cache
+      fetch(GAS_API_URL)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            localStorage.setItem('brainrot_catalog', JSON.stringify(data));
+            initApp(data);
+          }
+        })
+        .catch(err => {
+          console.error('API fetch error:', err);
+          if (!cached) {
+            document.getElementById('loadingScreen').innerHTML = '<p style="color:#ff0055;">データの読み込みに失敗しました。<br>リロードしてください。</p>';
+          }
+        });
+    };
+
+    function switchMode(id) {
+      document.querySelectorAll('.mode-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function renderQuiz() {
+      const item = qList[qIdx];
+      const card = document.getElementById('quizCard');
+      card.classList.remove('flipped');
+      document.getElementById('qFront').innerHTML = '<img src="' + item.image + '">';
+      document.getElementById('qBack').innerHTML =
+        '<div class="ans-inner" style="border:none;">' +
+          '<img src="' + item.image + '" class="ans-mini-img">' +
+          '<div class="ans-name">' + item.name + '</div>' +
+          '<div class="ans-desc">' + item.description + '</div>' +
+        '</div>';
+    }
+
+    function initSwipe() {
+      let x = 0;
+      const zone = document.getElementById('swipeZone');
+      zone.addEventListener('touchstart', function(e) { x = e.touches[0].pageX; });
+      zone.addEventListener('touchend', function(e) {
+        let diff = e.changedTouches[0].pageX - x;
+        if (diff < -60) { qIdx = (qIdx + 1) % qList.length; renderQuiz(); }
+        else if (diff > 60) { qIdx = (qIdx - 1 + qList.length) % qList.length; renderQuiz(); }
+      });
+    }
+
+    function renderChoice() {
+      const target = catalog[Math.floor(Math.random() * catalog.length)];
+      const others = catalog.filter(function(i) { return i.id !== target.id; }).sort(function() { return Math.random() - 0.5; }).slice(0, 2);
+      const options = [target].concat(others).sort(function() { return Math.random() - 0.5; });
+      document.getElementById('choicePrompt').innerText = '「' + target.name + '」はどれ？';
+      var list = document.getElementById('choiceList');
+      list.innerHTML = options.map(function(i) {
+        return '<div class="choice-btn" onclick="check(this,' + (i.id === target.id) + ')"><img src="' + i.image + '"></div>';
+      }).join('');
+    }
+
+    function check(el, ok) {
+      var root = document.getElementById('bodyRoot');
+      if (ok) {
+        combo++;
+        el.style.borderColor = "#4cd964";
+        confetti({ particleCount: 100 + combo, spread: 70, origin: { y: 0.6 } });
+        updateRank();
+        setTimeout(renderChoice, 800);
+      } else {
+        combo = 0;
+        el.style.borderColor = "#ff3b30";
+        root.className = '';
+        updateRank();
+        setTimeout(function() { el.style.borderColor = "transparent"; }, 400);
+      }
+    }
+
+    function updateRank() {
+      var label = document.getElementById('rankLabel');
+      var val = document.getElementById('comboVal');
+      var root = document.getElementById('bodyRoot');
+      val.innerText = combo;
+
+      if (combo >= 50) { label.innerText = "ランク：【神】"; document.getElementById('masterScreen').style.display = 'flex'; }
+      else if (combo >= 40) { label.innerText = "ランク：【極】"; root.className = 'rank-40'; }
+      else if (combo >= 30) { label.innerText = "ランク：【金】"; root.className = 'rank-30'; }
+      else if (combo >= 20) { label.innerText = "ランク：【銀】"; root.className = 'rank-20'; }
+      else if (combo >= 10) { label.innerText = "ランク：【銅】"; root.className = 'rank-10'; }
+      else { label.innerText = "ランク：なし"; }
+    }
+
+    function renderGrid(data) {
+      var grid = document.getElementById('gridDisplay');
+      grid.innerHTML = data.map(function(i) {
+        return '<div class="thumb-card" onclick="popPopDetail(' + catalog.indexOf(i) + ')"><img src="' + i.image + '"></div>';
+      }).join('');
+    }
+
+    function popPopDetail(idx) {
+      var i = catalog[idx];
+      var overlay = document.getElementById('modalOverlay');
+      var body = document.getElementById('modalBody');
+      body.innerHTML =
+        '<div class="ans-inner">' +
+          '<img src="' + i.image + '" class="ans-mini-img">' +
+          '<div class="ans-name">' + i.name + '</div>' +
+          '<div class="ans-desc">' + i.description + '</div>' +
+          '<div style="margin-top:20px; font-size:0.8rem; color:#888;">タップして もどる</div>' +
+        '</div>';
+      overlay.style.display = 'flex';
+    }
+
+    function closePopDetail() {
+      document.getElementById('modalOverlay').style.display = 'none';
+    }
+
+    function filterGrid() {
+      var q = document.getElementById('searchInput').value.toLowerCase();
+      var filtered = catalog.filter(function(i) {
+        return i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q);
+      });
+      renderGrid(filtered);
+    }
+  </script>
 </body>
 </html>
