@@ -8,13 +8,13 @@
 <!-- OGP / Twitter Card -->
 <meta property="og:title" content="🎮 イタリアンブレインロット図鑑ゲーム">
 <meta property="og:description" content="どのキャラか分かる？全キャラ当てて連続正解でランクアップ！">
-<meta property="og:image" content="https://www.brainrot.jp/images/characters/thumbnails/Tralalelo_tralala.webp">
+<meta property="og:image" content="https://ka-crypto-7632r.github.io/italian-brainrot-game/images/1.jpg">
 <meta property="og:url" content="https://ka-crypto-7632r.github.io/italian-brainrot-game/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="🎮 イタリアンブレインロット図鑑ゲーム">
 <meta name="twitter:description" content="どのキャラか分かる？全キャラ当てて連続正解でランクアップ！">
-<meta name="twitter:image" content="https://www.brainrot.jp/images/characters/thumbnails/Tralalelo_tralala.webp">
+<meta name="twitter:image" content="https://ka-crypto-7632r.github.io/italian-brainrot-game/images/1.jpg">
 
 <!-- Preconnect for faster image loads -->
 <link rel="preconnect" href="https://drive.google.com">
@@ -29,13 +29,19 @@
 <meta name="apple-mobile-web-app-title" content="図鑑ゲーム">
 <meta name="theme-color" content="#00ffcc">
 
-<!-- Analytics -->
+<!-- Analytics: replace G-XXXXXXXXXX with your GA4 Measurement ID -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-XXXXXXXXXX');
+  // utm_source=qr をつけたQRコードにすると「QR経由」が分かる
+  gtag('config', 'G-XXXXXXXXXX', { send_page_view: true });
+
+  // カスタムイベント送信ヘルパー
+  function gaEvent(name, params) {
+    if (typeof gtag === 'function') gtag('event', name, params || {});
+  }
 </script>
 
 <style>
@@ -520,6 +526,7 @@
     document.querySelectorAll('.choice-btn').forEach(b => b.onclick = null);
 
     showFeedback(ok);
+    gaEvent(ok ? 'answer_correct' : 'answer_wrong', { combo: combo, character: currentTarget ? currentTarget.name : '' });
 
     if (ok) {
       combo++;
@@ -527,6 +534,7 @@
       confetti({ particleCount: 80 + combo * 2, spread: 70, origin: { y: 0.6 } });
       updateRank();
       if (combo >= 40) {
+        gaEvent('rank_legend');
         document.getElementById('masterScreen').style.display = 'flex';
       }
       setTimeout(renderChoice, 800);
@@ -580,15 +588,15 @@
     var isColl = isCollected(item.id);
     document.getElementById('modalBody').innerHTML =
       '<div class="ans-inner">' +
-        '<img src="' + getImgUrl(item) + '" class="ans-mini-img" decoding="async">' +
+        '<img src="' + getImgUrl(item) + '" style="width:200px;height:200px;object-fit:contain;border-radius:16px;border:1px solid #eee;margin-bottom:14px;" decoding="async">' +
         '<div class="ans-name">' + item.name + '</div>' +
-        '<div class="ans-desc">' + item.description + '</div>' +
         '<button class="collect-btn' + (isColl ? ' collected' : '') + '" id="collectBtn" onclick="toggleCollect(\'' + item.id + '\', this)">' +
           (isColl ? '❤️ すき！ ✓' : '❤️ すき！') +
         '</button>' +
         '<div style="margin-top:14px;font-size:0.8rem;color:#aaa;">タップして もどる</div>' +
       '</div>';
     document.getElementById('modalOverlay').style.display = 'flex';
+    gaEvent('view_character', { character_name: item.name, character_id: item.id });
   }
 
   function toggleCollect(id, btn) {
@@ -658,7 +666,8 @@
   function doInstall() {
     if (!deferredInstallPrompt) return;
     deferredInstallPrompt.prompt();
-    deferredInstallPrompt.userChoice.then(function() {
+    deferredInstallPrompt.userChoice.then(function(choice) {
+      gaEvent('pwa_install', { outcome: choice.outcome }); // 'accepted' or 'dismissed'
       deferredInstallPrompt = null;
       document.getElementById('installBanner').style.display = 'none';
       document.getElementById('installFab').style.display = 'none';
