@@ -1,4 +1,4 @@
-const CACHE_NAME = 'brainrot-sw-v2';
+const CACHE_NAME = 'brainrot-sw-v3';
 const CONFETTI_URL = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js';
 
 // Install: pre-cache shell
@@ -53,7 +53,9 @@ self.addEventListener('fetch', function(event) {
   }
 
   // HTML pages: network-first so updates always land immediately
-  if (url.includes('.html') || url.endsWith('/') || url.split('?')[0].endsWith('/italian-brainrot-game')) {
+  // Use split('?')[0] so query params like ?v=10 don't break the check
+  var urlBase = url.split('?')[0];
+  if (url.includes('.html') || urlBase.endsWith('/') || urlBase.endsWith('/italian-brainrot-game')) {
     event.respondWith(
       fetch(event.request).then(function(response) {
         var clone = response.clone();
