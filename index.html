@@ -39,23 +39,10 @@
   .mode-content { display: none; }
   .mode-content.active { display: block; }
 
-  .guide-area { display: flex; justify-content: space-between; padding: 10px 5px; }
-  .guide-text { font-size: 0.8rem; font-weight: bold; color: var(--neon); }
-  .flip-arrow { display: inline-block; transform: scaleX(-1); }
-
-  .sq-frame { background: white; border-radius: 15px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 4px solid var(--neon); width: 100%; }
-  .sq-frame img { width: 92%; height: 92%; object-fit: contain; }
-
   .ans-inner { padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; color: #333; background: white; border-radius: 20px; border: 4px solid var(--neon); max-height: 85vh; overflow-y: auto; }
   .ans-mini-img { width: 110px; height: 110px; object-fit: contain; border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; }
   .ans-name { font-size: 1.8rem; font-weight: 900; color: var(--accent); margin-bottom: 35px; line-height: 1.1; }
   .ans-desc { font-size: 0.9rem; line-height: 1.6; text-align: left; border-top: 1px solid #eee; padding-top: 20px; width: 100%; }
-
-  .quiz-container { perspective: 1000px; width: 100%; height: 400px; margin-top: 5px; }
-  .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s; cursor: pointer; }
-  .card.flipped { transform: rotateY(180deg); }
-  .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 20px; border: 4px solid var(--neon); overflow: hidden; background: white; }
-  .card-back { transform: rotateY(180deg); }
 
   .score-bar { text-align: center; padding: 10px; margin-bottom: 10px; border-radius: 12px; background: rgba(0,0,0,0.4); border: 2px solid var(--neon); }
   .combo-num { font-size: 2rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 10px var(--gold); display: block; }
@@ -83,7 +70,7 @@
     padding: 10px 14px; gap: 10px;
     box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
     transition: transform 0.3s ease, opacity 0.3s ease;
-    transform: translateY(100%); /* 初期は非表示 */
+    transform: translateY(100%);
     opacity: 0;
     pointer-events: none;
   }
@@ -154,24 +141,14 @@
   </div>
 
   <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchMode('mode-quiz')">めくって</button>
+    <button class="tab-btn active" onclick="switchMode('mode-grid')">ずかん</button>
     <button class="tab-btn" onclick="switchMode('mode-choice')">えらんで</button>
-    <button class="tab-btn" onclick="switchMode('mode-grid')">ずかん</button>
   </div>
 
   <div class="container">
-    <div id="mode-quiz" class="mode-content active">
-      <div style="text-align:center; padding:5px 0;" class="guide-text">タップして めくってみよう</div>
-      <div class="quiz-container" id="swipeZone">
-        <div class="card" id="quizCard" onclick="this.classList.toggle('flipped')">
-          <div class="card-face card-front sq-frame" id="qFront" style="border:none;"></div>
-          <div class="card-face card-back" id="qBack"></div>
-        </div>
-      </div>
-      <div class="guide-area">
-        <div class="guide-text"><span class="flip-arrow">➜</span> もどる</div>
-        <div class="guide-text">つぎへ スライド ➜</div>
-      </div>
+    <div id="mode-grid" class="mode-content active">
+      <input type="text" id="searchInput" class="search-box" placeholder="なまえで さがしてみよう..." oninput="filterGrid()">
+      <div class="thumb-grid" id="gridDisplay"></div>
     </div>
 
     <div id="mode-choice" class="mode-content">
@@ -182,11 +159,6 @@
       </div>
       <div id="choicePrompt" style="text-align:center; margin-bottom:10px; font-weight:bold; color:var(--neon);"></div>
       <div id="choiceList"></div>
-    </div>
-
-    <div id="mode-grid" class="mode-content">
-      <input type="text" id="searchInput" class="search-box" placeholder="なまえで さがしてみよう..." oninput="filterGrid()">
-      <div class="thumb-grid" id="gridDisplay"></div>
     </div>
   </div>
 
@@ -230,27 +202,20 @@
     const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzE4SL1LcSnLQMnNpzXv6SzP1Uw3-hcJk2f-rM-6aYPeeOSu8d9pLXdiomDVhjWmm1I/exec?mode=api';
 
     let catalog = [];
-    let qList = [];
-    let qIdx = 0;
     let combo = 0;
 
     function initApp(data) {
       catalog = data;
-      qList = [...data].sort(() => Math.random() - 0.5);
-      renderQuiz();
       renderGrid(data);
       renderChoice();
-      initSwipe();
       document.getElementById('loadingScreen').style.display = 'none';
     }
 
     window.onload = function() {
-      // cache hit
       var cached = localStorage.getItem('brainrot_catalog');
       if (cached) {
         try { initApp(JSON.parse(cached)); } catch(e) {}
       }
-      // fetch latest & update cache
       fetch(GAS_API_URL)
         .then(res => res.json())
         .then(data => {
@@ -272,30 +237,6 @@
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(id).classList.add('active');
       event.target.classList.add('active');
-    }
-
-    function renderQuiz() {
-      const item = qList[qIdx];
-      const card = document.getElementById('quizCard');
-      card.classList.remove('flipped');
-      document.getElementById('qFront').innerHTML = '<img src="' + item.image + '">';
-      document.getElementById('qBack').innerHTML =
-        '<div class="ans-inner" style="border:none;">' +
-          '<img src="' + item.image + '" class="ans-mini-img">' +
-          '<div class="ans-name">' + item.name + '</div>' +
-          '<div class="ans-desc">' + item.description + '</div>' +
-        '</div>';
-    }
-
-    function initSwipe() {
-      let x = 0;
-      const zone = document.getElementById('swipeZone');
-      zone.addEventListener('touchstart', function(e) { x = e.touches[0].pageX; });
-      zone.addEventListener('touchend', function(e) {
-        let diff = e.changedTouches[0].pageX - x;
-        if (diff < -60) { qIdx = (qIdx + 1) % qList.length; renderQuiz(); }
-        else if (diff > 60) { qIdx = (qIdx - 1 + qList.length) % qList.length; renderQuiz(); }
-      });
     }
 
     function renderChoice() {
@@ -382,18 +323,14 @@
     function openIosSheet() {
       document.getElementById('iosSheet').classList.add('open');
       document.getElementById('iosOverlay').classList.add('open');
-      // buyBar は表示しない（被り防止）
     }
     function closeIosSheet() {
       document.getElementById('iosSheet').classList.remove('open');
       document.getElementById('iosOverlay').classList.remove('open');
-      // シートを閉じたタイミングで buyBar を初めて表示
       document.getElementById('buyBar').classList.remove('hidden');
       document.getElementById('buyBar').classList.add('visible');
     }
 
-    // iOS Safari でのみ「ホーム画面追加」シートを自動表示
-    // iOS 以外はシートなしで buyBar を遅延表示
     (function() {
       var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
       var isInStandalone = window.navigator.standalone === true;
@@ -401,7 +338,6 @@
         sessionStorage.setItem('iosSheetShown', '1');
         setTimeout(openIosSheet, 2000);
       } else {
-        // iOS 以外 or 既にシート表示済み → 3秒後に buyBar を表示
         setTimeout(function() {
           var bar = document.getElementById('buyBar');
           bar.classList.remove('hidden');
