@@ -16,11 +16,9 @@
 <meta name="twitter:description" content="どのキャラか分かる？全キャラ当てて連続正解でランクアップ！">
 <meta name="twitter:image" content="https://ka-crypto-7632r.github.io/italian-brainrot-game/images/1.jpg">
 
-<!-- Preconnect for faster image loads -->
-<link rel="preconnect" href="https://drive.google.com">
-<link rel="dns-prefetch" href="https://drive.google.com">
-<link rel="preconnect" href="https://lh3.googleusercontent.com">
-<link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
+<!-- Preconnect for faster loads -->
+<link rel="preconnect" href="https://ka-crypto-7632r.github.io">
+<link rel="dns-prefetch" href="https://ka-crypto-7632r.github.io">
 
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
@@ -246,14 +244,20 @@
 
   <!-- Tabs -->
   <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchMode('mode-choice', this)">🎯 ゲーム</button>
-    <button class="tab-btn" onclick="switchMode('mode-grid', this)">📚 ずかん</button>
+    <button class="tab-btn active" onclick="switchMode('mode-grid', this)">📚 ずかん</button>
+    <button class="tab-btn" onclick="switchMode('mode-choice', this)">🎯 ゲーム</button>
   </div>
 
   <div class="container">
 
+    <!-- ZUKAN TAB -->
+    <div id="mode-grid" class="mode-content active">
+      <input type="text" id="searchInput" class="search-box" placeholder="🔍 なまえや とくちょうで さがそう（スイカ など）" oninput="filterGrid()">
+      <div class="thumb-grid" id="gridDisplay"></div>
+    </div>
+
     <!-- GAME TAB -->
-    <div id="mode-choice" class="mode-content active">
+    <div id="mode-choice" class="mode-content">
       <div class="score-bar">
         <span id="rankLabel">ランク：－ ランクなし</span>
         <span class="combo-num" id="comboVal">0</span>
@@ -262,12 +266,6 @@
       </div>
       <div id="choicePrompt"></div>
       <div id="choiceList"></div>
-    </div>
-
-    <!-- ZUKAN TAB -->
-    <div id="mode-grid" class="mode-content">
-      <input type="text" id="searchInput" class="search-box" placeholder="🔍 なまえや とくちょうで さがそう（スイカ など）" oninput="filterGrid()">
-      <div class="thumb-grid" id="gridDisplay"></div>
     </div>
 
   </div>
@@ -382,8 +380,7 @@
   function updateCatalogSilently(data) {
     catalog = data;
     // keep current game state, just refresh grid
-    const q = document.getElementById('searchInput').value.toLowerCase();
-    renderGrid(q ? catalog.filter(i => i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q)) : catalog);
+    filterGrid();
   }
 
   window.onload = function() {
