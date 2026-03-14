@@ -344,10 +344,10 @@
   let deferredInstallPrompt = null;
 
   // ===================== IMAGE URL =====================
-  function getImgUrl(raw) {
-    if (!raw) return '';
-    const m = raw.match(/\/d\/([A-Za-z0-9_-]+)/);
-    return m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w200' : raw;
+  // Images are now served from GitHub Pages (images/{id}.jpg) — instant CDN
+  function getImgUrl(item) {
+    if (!item) return '';
+    return 'images/' + item.id + '.jpg';
   }
 
   // ===================== COLLECTION =====================
@@ -476,7 +476,7 @@
     if (!q) return;
     q.options.forEach(function(item) {
       var img = new Image();
-      img.src = getImgUrl(item.image);
+      img.src = getImgUrl(item);
     });
   }
 
@@ -496,7 +496,7 @@
     document.getElementById('choicePrompt').innerText = '「' + q.target.name + '」はどれ？';
 
     var html = q.options.map(function(item) {
-      var url = getImgUrl(item.image);
+      var url = getImgUrl(item);
       var isTarget = (item.id === q.target.id);
       return '<div class="choice-btn" data-correct="' + isTarget + '" onclick="check(this)">' +
         '<div class="choice-spinner"></div>' +
@@ -553,7 +553,7 @@
       var isColl = collected.includes(cid);
       var idx = catalog.indexOf(item);
       return '<div class="thumb-card' + (isColl ? ' collected' : '') + '" data-char-id="' + cid + '" onclick="popDetail(' + idx + ')">' +
-        '<img src="' + getImgUrl(item.image) + '" loading="lazy" decoding="async">' +
+        '<img src="' + getImgUrl(item) + '" loading="lazy" decoding="async">' +
         '<span class="collected-badge">❤️</span>' +
         '</div>';
     }).join('');
@@ -571,7 +571,7 @@
     var isColl = isCollected(item.id);
     document.getElementById('modalBody').innerHTML =
       '<div class="ans-inner">' +
-        '<img src="' + getImgUrl(item.image) + '" class="ans-mini-img" decoding="async">' +
+        '<img src="' + getImgUrl(item) + '" class="ans-mini-img" decoding="async">' +
         '<div class="ans-name">' + item.name + '</div>' +
         '<div class="ans-desc">' + item.description + '</div>' +
         '<button class="collect-btn' + (isColl ? ' collected' : '') + '" id="collectBtn" onclick="toggleCollect(\'' + item.id + '\', this)">' +
