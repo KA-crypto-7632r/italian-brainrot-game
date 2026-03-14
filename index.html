@@ -559,9 +559,18 @@
     }).join('');
   }
 
+  // Normalize: katakana→hiragana + lowercase so search is kana-agnostic
+  function normalize(str) {
+    return (str || '').replace(/[\u30A1-\u30F6]/g, function(ch) {
+      return String.fromCharCode(ch.charCodeAt(0) - 0x60);
+    }).toLowerCase();
+  }
+
   function filterGrid() {
-    var q = document.getElementById('searchInput').value.toLowerCase();
-    var filtered = q ? catalog.filter(i => i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q)) : catalog;
+    var q = normalize(document.getElementById('searchInput').value);
+    var filtered = q ? catalog.filter(function(i) {
+      return normalize(i.name).includes(q) || normalize(i.description).includes(q);
+    }) : catalog;
     renderGrid(filtered);
   }
 
