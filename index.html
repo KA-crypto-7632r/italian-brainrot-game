@@ -16,6 +16,12 @@
 <meta name="twitter:description" content="どのキャラか分かる？全キャラ当てて連続正解でランクアップ！">
 <meta name="twitter:image" content="https://www.brainrot.jp/images/characters/thumbnails/Tralalelo_tralala.webp">
 
+<!-- Preconnect for faster image loads -->
+<link rel="preconnect" href="https://drive.google.com">
+<link rel="dns-prefetch" href="https://drive.google.com">
+<link rel="preconnect" href="https://lh3.googleusercontent.com">
+<link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
+
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -183,9 +189,6 @@
     box-shadow: 0 4px 14px rgba(0,255,204,0.5); align-items: center; justify-content: center;
   }
 
-  /* iOS install sheet — above buyBar */
-  #iosSheet { z-index: 8000; }
-
   /* Header install button */
   #headerInstallBtn {
     display: none; margin-top: 6px;
@@ -194,16 +197,14 @@
     font-weight: bold; cursor: pointer;
   }
 
-  /* iOS install sheet */
-  #iosSheet {
-    display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 6000;
-    background: #001a33; border-top: 2px solid var(--neon); border-radius: 20px 20px 0 0;
-    padding: 20px 20px 30px; animation: slideUp 0.3s ease-out;
+  /* iOS / Android install sheet — z-index above buyBar(7000) */
+  #iosSheet, #androidSheet {
+    display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 8000;
   }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-  #iosSheet h3 { color: var(--neon); margin: 0 0 14px; font-size: 1rem; }
-  #iosSheet p { font-size: 0.9rem; line-height: 1.8; margin: 0 0 16px; }
-  #iosSheetClose {
+  #iosSheet h3, #androidSheet h3 { color: var(--neon); margin: 0 0 14px; font-size: 1rem; }
+  #iosSheet p, #androidSheet p { font-size: 0.9rem; line-height: 1.8; margin: 0 0 16px; }
+  .sheet-close-btn {
     display: block; width: 100%; padding: 11px; background: rgba(255,255,255,0.1);
     border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 12px;
     font-weight: bold; cursor: pointer; font-size: 0.9rem;
@@ -291,9 +292,16 @@
 
   <!-- iOS install sheet -->
   <div id="iosSheet">
-    <h3>📱 ホーム画面に追加しよう</h3>
-    <p>① 下の共有ボタン ⬆ をタップ<br>② 「ホーム画面に追加」を選ぶ<br>③ 次からアイコンをタップするだけ！</p>
-    <button id="iosSheetClose" onclick="closeIosSheet()">とじる ✕</button>
+    <h3>📱 ホーム画面に追加しよう（iPhone）</h3>
+    <p>① 下の共有ボタン <strong style="font-size:1.1rem;">⬆</strong> をタップ<br>② 「ホーム画面に追加」を選ぶ<br>③ 次からアイコンをタップするだけ！</p>
+    <button class="sheet-close-btn" onclick="closeIosSheet()">とじる ✕</button>
+  </div>
+
+  <!-- Android manual install sheet -->
+  <div id="androidSheet">
+    <h3>📱 ホーム画面に追加しよう（Android）</h3>
+    <p>① Chrome 右上の「<strong>⋮</strong>」をタップ<br>② 「<strong>アプリをインストール</strong>」または<br>　「<strong>ホーム画面に追加</strong>」を選ぶ<br>③ 次からアイコンをタップするだけ！</p>
+    <button class="sheet-close-btn" onclick="document.getElementById('androidSheet').style.display='none'">とじる ✕</button>
   </div>
 
   <div id="buyBar" style="position:fixed;bottom:0;left:0;right:0;z-index:7000;background:linear-gradient(90deg,#bf0000,#ff4400);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
@@ -629,8 +637,12 @@
   function triggerInstall() {
     if (isIOS()) {
       document.getElementById('iosSheet').style.display = 'block';
-    } else {
+    } else if (deferredInstallPrompt) {
       doInstall();
+    } else {
+      // beforeinstallprompt didn't fire (already installed before, or engagement heuristic)
+      // Show manual Android instruction instead
+      document.getElementById('androidSheet').style.display = 'block';
     }
   }
 
