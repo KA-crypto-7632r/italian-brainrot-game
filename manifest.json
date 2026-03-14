@@ -1,0 +1,12 @@
+{
+  "name": "イタリアンブレインロット図鑑",
+  "short_name": "ブレインロット",
+  "description": "全キャラを当てて連続正解でランクアップ！イタリアンブレインロット図鑑ゲーム",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#000428",
+  "theme_color": "#00ffcc",
+  "lang": "ja",
+  "orientation": "portrait-primary"
+}

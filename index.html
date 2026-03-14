@@ -3,7 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Italian Brainrot Game</title>
+<title>イタリアンブレインロット図鑑ゲーム</title>
+
+<!-- OGP / Twitter Card -->
+<meta property="og:title" content="🎮 イタリアンブレインロット図鑑ゲーム">
+<meta property="og:description" content="どのキャラか分かる？全キャラ当てて連続正解でランクアップ！">
+<meta property="og:image" content="https://www.brainrot.jp/images/characters/thumbnails/Tralalelo_tralala.webp">
+<meta property="og:url" content="https://ka-crypto-7632r.github.io/italian-brainrot-game/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="🎮 イタリアンブレインロット図鑑ゲーム">
+<meta name="twitter:description" content="どのキャラか分かる？全キャラ当てて連続正解でランクアップ！">
+<meta name="twitter:image" content="https://www.brainrot.jp/images/characters/thumbnails/Tralalelo_tralala.webp">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ブレインロット">
+<meta name="theme-color" content="#00ffcc">
+
+<!-- Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -11,6 +31,7 @@
   gtag('js', new Date());
   gtag('config', 'G-XXXXXXXXXX');
 </script>
+
 <style>
   * { box-sizing: border-box; }
   :root {
@@ -18,317 +39,596 @@
     --neon: #00ffcc; --accent: #ff0055; --gold: #ffd700;
   }
   body {
-    font-family: -apple-system, sans-serif; background: var(--bg); color: white;
-    margin: 0; padding: 0 0 120px 0; min-height: 100vh; overflow-x: hidden; transition: 0.5s;
+    font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    background: var(--bg); color: white;
+    margin: 0; padding: 0 0 120px 0; min-height: 100vh; overflow-x: hidden; transition: background 0.6s;
   }
 
-  body.rank-10 { background: linear-gradient(135deg, #2c3e50, #bdc3c7); }
-  body.rank-20 { background: linear-gradient(135deg, #8e9eab, #eef2f3); }
-  body.rank-30 { background: linear-gradient(135deg, #4b1212, #ff4500); }
-  body.rank-40 { background: linear-gradient(135deg, #000000, #4b1212); animation: pulse 2s infinite; }
+  /* Rank backgrounds */
+  body.rank-1 { background: linear-gradient(135deg, #000428 0%, #004e92 100%); }
+  body.rank-2 { background: linear-gradient(135deg, #0a2a0a 0%, #1a7a1a 100%); }
+  body.rank-3 { background: linear-gradient(135deg, #0a0a2a 0%, #1a1a9a 100%); }
+  body.rank-4 { background: linear-gradient(135deg, #2a1a00 0%, #8a5a00 100%); }
+  body.rank-5 { background: linear-gradient(135deg, #2a0a2a 0%, #8a008a 100%); }
+  body.rank-6 { background: linear-gradient(135deg, #000000, #3a1212); animation: pulse 2s infinite; }
   @keyframes pulse { 0% { filter: brightness(1); } 50% { filter: brightness(1.3); } 100% { filter: brightness(1); } }
 
-  .app-header { text-align: center; padding: 15px 0; background: rgba(0,0,0,0.5); border-bottom: 2px solid var(--neon); }
-  .main-title { font-size: 1.2rem; font-weight: 900; color: var(--neon); text-shadow: 0 0 8px var(--neon); }
+  .app-header { text-align: center; padding: 16px 0 12px; background: rgba(0,0,0,0.5); border-bottom: 2px solid var(--neon); }
+  .main-title { font-size: 1.25rem; font-weight: 900; color: var(--neon); text-shadow: 0 0 10px var(--neon); }
 
-  .nav-tabs { display: flex; justify-content: center; gap: 5px; padding: 10px; }
-  .tab-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px; border-radius: 15px; flex: 1; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+  .nav-tabs { display: flex; justify-content: center; gap: 10px; padding: 12px; }
+  .tab-btn {
+    background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3);
+    color: white; padding: 12px 18px; border-radius: 25px; flex: 1; cursor: pointer;
+    font-size: 0.9rem; font-weight: bold; transition: all 0.25s; max-width: 180px;
+  }
   .tab-btn.active { background: var(--neon); color: #000; border-color: var(--neon); }
 
-  .container { width: 100%; max-width: 450px; margin: 0 auto; padding: 0 16px; }
+  .container { width: 100%; max-width: 460px; margin: 0 auto; padding: 0 16px; }
   .mode-content { display: none; }
   .mode-content.active { display: block; }
 
-  .guide-area { display: flex; justify-content: space-between; padding: 10px 5px; }
-  .guide-text { font-size: 0.8rem; font-weight: bold; color: var(--neon); }
-  .flip-arrow { display: inline-block; transform: scaleX(-1); }
+  /* Score bar */
+  .score-bar {
+    text-align: center; padding: 12px 10px; margin: 10px 0 12px;
+    border-radius: 14px; background: rgba(0,0,0,0.4); border: 2px solid var(--neon);
+  }
+  #rankLabel { font-weight: bold; font-size: 1rem; display: block; margin-bottom: 2px; }
+  .combo-num { font-size: 2.4rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 10px var(--gold); display: block; line-height: 1.1; }
+  #nextRankHint { font-size: 0.8rem; color: rgba(255,255,255,0.75); margin-top: 3px; display: block; }
 
-  .sq-frame { background: white; border-radius: 15px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 4px solid var(--neon); width: 100%; }
-  .sq-frame img { width: 92%; height: 92%; object-fit: contain; }
+  /* Choice buttons */
+  #choicePrompt { text-align: center; margin-bottom: 10px; font-weight: bold; font-size: 1.05rem; color: var(--neon); }
+  .choice-btn {
+    background: white; border-radius: 14px; height: 130px; display: flex;
+    align-items: center; justify-content: center; border: 4px solid transparent;
+    padding: 6px; margin-bottom: 10px; cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color 0.2s, transform 0.1s;
+  }
+  .choice-btn:active { transform: scale(0.97); }
+  .choice-btn img { max-width: 95%; max-height: 95%; object-fit: contain; display: none; }
+  .choice-btn img.loaded { display: block; }
+  .choice-spinner {
+    width: 36px; height: 36px; border: 4px solid rgba(0,0,0,0.15);
+    border-top-color: var(--neon); border-radius: 50%;
+    animation: spin 0.7s linear infinite; position: absolute;
+  }
+  .choice-spinner.hidden { display: none; }
+  @media (max-height: 600px) { .choice-btn { height: 100px; } }
 
-  .ans-inner { padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; color: #333; background: white; border-radius: 20px; border: 4px solid var(--neon); max-height: 85vh; overflow-y: auto; }
-  .ans-mini-img { width: 110px; height: 110px; object-fit: contain; border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; }
-  .ans-name { font-size: 1.8rem; font-weight: 900; color: var(--accent); margin-bottom: 35px; line-height: 1.1; }
-  .ans-desc { font-size: 0.9rem; line-height: 1.6; text-align: left; border-top: 1px solid #eee; padding-top: 20px; width: 100%; }
+  /* Feedback overlay */
+  #feedbackOverlay {
+    position: fixed; inset: 0; z-index: 5000; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  #feedbackOverlay.show { opacity: 1; }
+  #feedbackEmoji { font-size: 8rem; filter: drop-shadow(0 0 20px rgba(255,255,255,0.8)); }
+  #feedbackOverlay.correct { background: rgba(0,200,80,0.35); }
+  #feedbackOverlay.wrong { background: rgba(255,40,40,0.35); }
+  @keyframes scaleIn { from { transform: scale(0.3); } to { transform: scale(1); } }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-18px); } 40% { transform: translateX(18px); } 60% { transform: translateX(-12px); } 80% { transform: translateX(12px); } }
+  #feedbackEmoji.correct { animation: scaleIn 0.2s ease-out; }
+  #feedbackEmoji.wrong { animation: shake 0.4s ease-out; }
 
-  .quiz-container { perspective: 1000px; width: 100%; height: 400px; margin-top: 5px; }
-  .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s; cursor: pointer; }
-  .card.flipped { transform: rotateY(180deg); }
-  .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 20px; border: 4px solid var(--neon); overflow: hidden; background: white; }
-  .card-back { transform: rotateY(180deg); }
-
-  .score-bar { text-align: center; padding: 10px; margin-bottom: 10px; border-radius: 12px; background: rgba(0,0,0,0.4); border: 2px solid var(--neon); }
-  .combo-num { font-size: 2rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 10px var(--gold); display: block; }
-  .choice-btn { background: white; border-radius: 12px; height: 140px; display: flex; align-items: center; justify-content: center; border: 4px solid transparent; padding: 5px; margin-bottom: 10px; }
-  .choice-btn img { max-width: 95%; max-height: 95%; object-fit: contain; }
-
-  .search-box { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid var(--neon); background: rgba(0,0,0,0.6); color: white; margin-bottom: 15px; font-size: 1rem; }
+  /* Grid */
+  .search-box {
+    width: 100%; padding: 13px; border-radius: 12px;
+    border: 2px solid var(--neon); background: rgba(0,0,0,0.6); color: white;
+    margin-bottom: 10px; font-size: 1rem;
+  }
+  #collectedCounter {
+    font-size: 0.9rem; color: var(--gold); margin-bottom: 10px;
+    font-weight: bold; text-align: center;
+  }
   .thumb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .thumb-card { background: white; aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 5px; overflow: hidden; }
+  .thumb-card {
+    background: white; aspect-ratio: 1; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 5px; overflow: hidden; cursor: pointer;
+    position: relative; border: 3px solid transparent; transition: border-color 0.2s;
+  }
+  .thumb-card.collected { border-color: var(--gold); }
   .thumb-card img { width: 100%; height: 100%; object-fit: contain; }
+  .collected-badge {
+    position: absolute; top: 3px; right: 3px;
+    font-size: 0.85rem; line-height: 1;
+    display: none;
+  }
+  .thumb-card.collected .collected-badge { display: block; }
 
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
+  .ans-inner {
+    padding: 24px; display: flex; flex-direction: column; align-items: center;
+    text-align: center; width: 100%; color: #333; background: white;
+    border-radius: 20px; border: 4px solid var(--neon); max-height: 90vh; overflow-y: auto;
+  }
+  .ans-mini-img { width: 120px; height: 120px; object-fit: contain; border: 1px solid #eee; border-radius: 14px; margin-bottom: 12px; }
+  .ans-name { font-size: 1.8rem; font-weight: 900; color: var(--accent); margin-bottom: 20px; line-height: 1.15; }
+  .ans-desc { font-size: 0.95rem; line-height: 1.65; text-align: left; border-top: 1px solid #eee; padding-top: 16px; width: 100%; }
+  .collect-btn {
+    margin-top: 16px; padding: 10px 22px; border-radius: 20px; border: 2px solid #ccc;
+    background: #f5f5f5; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: all 0.2s;
+  }
+  .collect-btn.collected { background: #fff8dc; border-color: var(--gold); color: #b8860b; }
 
-  .master-screen { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; }
-
-  .loading-screen { display: flex; position: fixed; inset: 0; background: var(--bg); z-index: 4000; flex-direction: column; align-items: center; justify-content: center; }
-  .loading-screen .spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.2); border-top-color: var(--neon); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  /* Loading screen */
+  .loading-screen {
+    display: flex; position: fixed; inset: 0; background: var(--bg);
+    z-index: 4000; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .loading-screen .spinner {
+    width: 52px; height: 52px; border: 5px solid rgba(255,255,255,0.2);
+    border-top-color: var(--neon); border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Install banner (Android) */
+  #installBanner {
+    display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 6000;
+    background: #003366; border-top: 2px solid var(--neon);
+    padding: 14px 16px; align-items: center; gap: 10px; font-size: 0.9rem;
+  }
+  #installBanner span { flex: 1; font-weight: bold; }
+  #installBannerBtn {
+    background: var(--neon); color: #000; border: none;
+    padding: 9px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.9rem;
+  }
+  #installBannerClose { background: transparent; border: none; color: white; font-size: 1.4rem; cursor: pointer; padding: 4px 8px; }
+
+  /* Install FAB (Android, after dismiss) */
+  #installFab {
+    display: none; position: fixed; bottom: 20px; right: 16px; z-index: 6000;
+    background: var(--neon); color: #000; border: none; border-radius: 50%;
+    width: 52px; height: 52px; font-size: 1.5rem; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,255,204,0.5); align-items: center; justify-content: center;
+  }
+
+  /* iOS install sheet */
+  #iosSheet {
+    display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 6000;
+    background: #001a33; border-top: 2px solid var(--neon); border-radius: 20px 20px 0 0;
+    padding: 20px 20px 30px; animation: slideUp 0.3s ease-out;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  #iosSheet h3 { color: var(--neon); margin: 0 0 14px; font-size: 1rem; }
+  #iosSheet p { font-size: 0.9rem; line-height: 1.8; margin: 0 0 16px; }
+  #iosSheetClose {
+    display: block; width: 100%; padding: 11px; background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 12px;
+    font-weight: bold; cursor: pointer; font-size: 0.9rem;
+  }
+
+  /* Master screen */
+  .master-screen {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.95); z-index: 3000;
+    flex-direction: column; align-items: center; justify-content: center;
+  }
 </style>
 </head>
 <body id="bodyRoot">
 
+  <!-- Loading screen -->
   <div id="loadingScreen" class="loading-screen">
     <div class="spinner"></div>
-    <p style="margin-top:20px; color: var(--neon);">Loading...</p>
+    <p style="margin-top:20px; color:var(--neon); font-size:1rem;">Loading...</p>
   </div>
 
+  <!-- Feedback overlay -->
+  <div id="feedbackOverlay"><span id="feedbackEmoji"></span></div>
+
+  <!-- Header -->
   <div class="app-header">
-    <span class="main-title">イタリアンブレインロット図鑑</span>
+    <span class="main-title">🎮 イタリアンブレインロット図鑑</span>
   </div>
 
+  <!-- Tabs -->
   <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchMode('mode-quiz')">めくって</button>
-    <button class="tab-btn" onclick="switchMode('mode-choice')">えらんで</button>
-    <button class="tab-btn" onclick="switchMode('mode-grid')">ずかん</button>
+    <button class="tab-btn active" onclick="switchMode('mode-choice', this)">🎯 ゲーム</button>
+    <button class="tab-btn" onclick="switchMode('mode-grid', this)">📚 ずかん</button>
   </div>
 
   <div class="container">
-    <div id="mode-quiz" class="mode-content active">
-      <div style="text-align:center; padding:5px 0;" class="guide-text">タップして めくってみよう</div>
-      <div class="quiz-container" id="swipeZone">
-        <div class="card" id="quizCard" onclick="this.classList.toggle('flipped')">
-          <div class="card-face card-front sq-frame" id="qFront" style="border:none;"></div>
-          <div class="card-face card-back" id="qBack"></div>
-        </div>
-      </div>
-      <div class="guide-area">
-        <div class="guide-text"><span class="flip-arrow">➜</span> もどる</div>
-        <div class="guide-text">つぎへ スライド ➜</div>
-      </div>
-    </div>
 
-    <div id="mode-choice" class="mode-content">
+    <!-- GAME TAB -->
+    <div id="mode-choice" class="mode-content active">
       <div class="score-bar">
-        <span id="rankLabel" style="font-weight:bold;">ランク：なし</span>
+        <span id="rankLabel">ランク：－ ランクなし</span>
         <span class="combo-num" id="comboVal">0</span>
-        <span style="font-size:0.7rem;">れんぞく せいかいしよう！</span>
+        <span style="font-size:0.75rem;">れんぞく せいかい！</span>
+        <span id="nextRankHint"></span>
       </div>
-      <div id="choicePrompt" style="text-align:center; margin-bottom:10px; font-weight:bold; color:var(--neon);"></div>
+      <div id="choicePrompt"></div>
       <div id="choiceList"></div>
     </div>
 
+    <!-- ZUKAN TAB -->
     <div id="mode-grid" class="mode-content">
-      <input type="text" id="searchInput" class="search-box" placeholder="なまえで さがしてみよう..." oninput="filterGrid()">
+      <input type="text" id="searchInput" class="search-box" placeholder="🔍 なまえで さがしてみよう..." oninput="filterGrid()">
+      <div id="collectedCounter"></div>
       <div class="thumb-grid" id="gridDisplay"></div>
     </div>
+
   </div>
 
+  <!-- Detail modal -->
   <div id="modalOverlay" class="modal-overlay" onclick="closePopDetail()">
     <div id="modalBody" onclick="event.stopPropagation()"></div>
   </div>
 
+  <!-- Master screen -->
   <div id="masterScreen" class="master-screen">
-    <h1 style="color:gold; font-size:4rem; margin:0;">【神】</h1>
-    <p>マスター認定！</p>
-    <button class="tab-btn active" style="max-width:200px;" onclick="location.reload()">もういちど</button>
+    <h1 style="color:gold; font-size:4rem; margin:0;">🌟</h1>
+    <p style="font-size:1.4rem; font-weight:bold;">でんせつ 認定！</p>
+    <button class="tab-btn active" style="max-width:200px; margin-top:20px;" onclick="location.reload()">もういちど</button>
+  </div>
+
+  <!-- Android install banner -->
+  <div id="installBanner" style="display:none; flex-direction:row;">
+    <span>📱 ホーム画面に追加して、すぐ遊べる！</span>
+    <button id="installBannerBtn" onclick="doInstall()">追加する</button>
+    <button id="installBannerClose" onclick="dismissBanner()">✕</button>
+  </div>
+
+  <!-- Android install FAB -->
+  <button id="installFab" onclick="doInstall()" title="ホーム画面に追加">📱</button>
+
+  <!-- iOS install sheet -->
+  <div id="iosSheet">
+    <h3>📱 ホーム画面に追加しよう</h3>
+    <p>① 下の共有ボタン ⬆ をタップ<br>② 「ホーム画面に追加」を選ぶ<br>③ 次からアイコンをタップするだけ！</p>
+    <button id="iosSheetClose" onclick="closeIosSheet()">とじる ✕</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <script>
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzE4SL1LcSnLQMnNpzXv6SzP1Uw3-hcJk2f-rM-6aYPeeOSu8d9pLXdiomDVhjWmm1I/exec?mode=api';
-    const CACHE_KEY = 'brainrot_catalog';
-    const CACHE_TS_KEY = 'brainrot_catalog_ts';
-    const CACHE_TTL = 60 * 60 * 1000; // 1時間キャッシュ有効
+  // ===================== CONFIG =====================
+  const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzE4SL1LcSnLQMnNpzXv6SzP1Uw3-hcJk2f-rM-6aYPeeOSu8d9pLXdiomDVhjWmm1I/exec?mode=api';
+  const CACHE_KEY   = 'brainrot_catalog_v2';
+  const CACHE_TS_KEY = 'brainrot_catalog_v2_ts';
+  const CACHE_TTL   = 60 * 60 * 1000; // 1 hour
+  const COLLECTED_KEY = 'brainrot_collected';
 
-    let catalog = [];
-    let qList = [];
-    let qIdx = 0;
-    let combo = 0;
-    let initialized = false;
-    let swipeInited = false;
+  // ===================== RANKS =====================
+  const RANKS = [
+    { min: 0,  label: '－ ランクなし', cls: '' },
+    { min: 3,  label: '⭐ すごい！', cls: 'rank-1' },
+    { min: 7,  label: '⭐⭐ めちゃすごい！', cls: 'rank-2' },
+    { min: 15, label: '⭐⭐⭐ てんさい！', cls: 'rank-3' },
+    { min: 25, label: '👑 マスター！', cls: 'rank-4' },
+    { min: 40, label: '🌟 でんせつ！', cls: 'rank-5' },
+  ];
 
-    // ---- 初回起動（キャッシュなし） ----
-    function initApp(data) {
-      catalog = data;
-      qList = [...data].sort(() => Math.random() - 0.5);
-      qIdx = 0;
-      renderQuiz();
-      preloadAhead();
-      renderGrid(data);
-      renderChoice();
-      if (!swipeInited) { initSwipe(); swipeInited = true; }
-      document.getElementById('loadingScreen').style.display = 'none';
-      initialized = true;
+  function getRankIndex(n) {
+    let idx = 0;
+    for (let i = 0; i < RANKS.length; i++) { if (n >= RANKS[i].min) idx = i; }
+    return idx;
+  }
+
+  // ===================== STATE =====================
+  let catalog = [];
+  let combo = 0;
+  let currentTarget = null;
+  let nextQ = null;
+  let initialized = false;
+  let deferredInstallPrompt = null;
+
+  // ===================== IMAGE URL =====================
+  function getImgUrl(raw) {
+    if (!raw) return '';
+    const m = raw.match(/\/d\/([A-Za-z0-9_-]+)/);
+    return m ? `https://lh3.googleusercontent.com/d/${m[1]}=w400` : raw;
+  }
+
+  // ===================== COLLECTION =====================
+  function getCollected() {
+    try { return JSON.parse(localStorage.getItem(COLLECTED_KEY) || '[]'); } catch(e) { return []; }
+  }
+  function saveCollected(arr) { localStorage.setItem(COLLECTED_KEY, JSON.stringify(arr)); }
+  function isCollected(id) { return getCollected().includes(String(id)); }
+  function toggleCollected(id) {
+    let arr = getCollected();
+    id = String(id);
+    if (arr.includes(id)) { arr = arr.filter(x => x !== id); } else { arr.push(id); }
+    saveCollected(arr);
+    return arr.includes(id);
+  }
+
+  // ===================== INIT =====================
+  function initApp(data) {
+    catalog = data;
+    renderGrid(data);
+    renderChoice();
+    document.getElementById('loadingScreen').style.display = 'none';
+    initialized = true;
+  }
+
+  function updateCatalogSilently(data) {
+    catalog = data;
+    // keep current game state, just refresh grid
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    renderGrid(q ? catalog.filter(i => i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q)) : catalog);
+  }
+
+  window.onload = function() {
+    // Register SW
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
     }
 
-    // ---- バックグラウンド更新（ゲーム状態を壊さない） ----
-    function updateCatalogSilently(data) {
-      catalog = data;
-      // qListは使い切ったカード分だけ差し替え（現在位置は保持）
-      var remaining = data.filter(function(d) {
-        return !qList.slice(0, qIdx).some(function(q) { return q.id === d.id; });
+    // PWA install hooks
+    setupInstallUI();
+
+    var cached = localStorage.getItem(CACHE_KEY);
+    var cachedTs = parseInt(localStorage.getItem(CACHE_TS_KEY) || '0');
+    var now = Date.now();
+
+    if (cached) {
+      try { initApp(JSON.parse(cached)); } catch(e) { cached = null; }
+    }
+
+    if (!cached || (now - cachedTs > CACHE_TTL)) {
+      var ctrl = new AbortController();
+      var tid = setTimeout(function(){ ctrl.abort(); }, 8000);
+      fetch(GAS_API_URL, { signal: ctrl.signal })
+        .then(r => r.json())
+        .then(function(data) {
+          clearTimeout(tid);
+          if (!Array.isArray(data)) return;
+          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+          localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
+          if (!initialized) { initApp(data); } else { updateCatalogSilently(data); }
+        })
+        .catch(function() {
+          clearTimeout(tid);
+          if (!initialized) {
+            document.getElementById('loadingScreen').innerHTML =
+              '<p style="color:#ff0055;text-align:center;padding:20px;">データの読み込みに失敗しました。<br><br>' +
+              '<button onclick="location.reload()" style="background:var(--neon);border:none;padding:12px 24px;border-radius:12px;font-size:1rem;font-weight:bold;cursor:pointer;">🔄 もういちど読む</button></p>';
+          }
+        });
+    }
+  };
+
+  // ===================== TAB SWITCH =====================
+  function switchMode(id, btn) {
+    document.querySelectorAll('.mode-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (btn) btn.classList.add('active');
+  }
+
+  // ===================== RANK / SCORE =====================
+  function updateRank() {
+    var idx = getRankIndex(combo);
+    var rank = RANKS[idx];
+    var root = document.getElementById('bodyRoot');
+    document.getElementById('rankLabel').innerText = 'ランク：' + rank.label;
+    document.getElementById('comboVal').innerText = combo;
+    // Clear all rank classes
+    root.className = rank.cls;
+
+    // Next rank hint
+    var hint = document.getElementById('nextRankHint');
+    if (idx < RANKS.length - 1) {
+      var next = RANKS[idx + 1];
+      var diff = next.min - combo;
+      hint.innerText = 'あと ' + diff + ' かいで ' + next.label;
+    } else {
+      hint.innerText = 'さいこうランク！🌟';
+    }
+  }
+
+  // ===================== FEEDBACK OVERLAY =====================
+  function showFeedback(ok) {
+    var ov = document.getElementById('feedbackOverlay');
+    var em = document.getElementById('feedbackEmoji');
+    ov.className = 'show ' + (ok ? 'correct' : 'wrong');
+    em.className = ok ? 'correct' : 'wrong';
+    em.textContent = ok ? '⭕' : '❌';
+    clearTimeout(ov._fadeTimer);
+    ov._fadeTimer = setTimeout(function(){
+      ov.className = '';
+    }, 750);
+  }
+
+  // ===================== CHOICE GAME =====================
+  function pickRandomQuestion() {
+    if (catalog.length === 0) return null;
+    var target = catalog[Math.floor(Math.random() * catalog.length)];
+    var others = catalog.filter(i => i.id !== target.id)
+      .sort(() => Math.random() - 0.5).slice(0, 2);
+    var options = [target].concat(others).sort(() => Math.random() - 0.5);
+    return { target, options };
+  }
+
+  function preloadQuestionImages(q) {
+    if (!q) return;
+    q.options.forEach(function(item) {
+      var img = new Image();
+      img.src = getImgUrl(item.image);
+    });
+  }
+
+  function renderChoice() {
+    if (catalog.length === 0) return;
+
+    var q;
+    if (nextQ) {
+      q = nextQ;
+      nextQ = null;
+    } else {
+      q = pickRandomQuestion();
+    }
+    if (!q) return;
+
+    currentTarget = q.target;
+    document.getElementById('choicePrompt').innerText = '「' + q.target.name + '」はどれ？';
+
+    var html = q.options.map(function(item) {
+      var url = getImgUrl(item.image);
+      var isTarget = (item.id === q.target.id);
+      return '<div class="choice-btn" data-correct="' + isTarget + '" onclick="check(this)">' +
+        '<div class="choice-spinner"></div>' +
+        '<img src="' + url + '" decoding="async" onload="this.classList.add(\'loaded\');this.previousSibling.classList.add(\'hidden\')">' +
+        '</div>';
+    }).join('');
+
+    document.getElementById('choiceList').innerHTML = html;
+
+    // Preload next question in background
+    var nq = pickRandomQuestion();
+    nextQ = nq;
+    preloadQuestionImages(nq);
+
+    updateRank();
+  }
+
+  function check(el) {
+    var ok = el.getAttribute('data-correct') === 'true';
+    // Disable all buttons briefly
+    document.querySelectorAll('.choice-btn').forEach(b => b.onclick = null);
+
+    showFeedback(ok);
+
+    if (ok) {
+      combo++;
+      el.style.borderColor = '#4cd964';
+      confetti({ particleCount: 80 + combo * 2, spread: 70, origin: { y: 0.6 } });
+      updateRank();
+      if (combo >= 40) {
+        document.getElementById('masterScreen').style.display = 'flex';
+      }
+      setTimeout(renderChoice, 800);
+    } else {
+      combo = 0;
+      el.style.borderColor = '#ff3b30';
+      // Show correct answer highlight
+      document.querySelectorAll('.choice-btn').forEach(function(b) {
+        if (b.getAttribute('data-correct') === 'true') b.style.borderColor = '#4cd964';
       });
-      qList = qList.slice(0, qIdx).concat(remaining.sort(() => Math.random() - 0.5));
-      renderGrid(data);
+      updateRank();
+      setTimeout(function() {
+        el.style.borderColor = 'transparent';
+        renderChoice();
+      }, 1000);
     }
+  }
 
-    window.onload = function() {
-      var cached = localStorage.getItem(CACHE_KEY);
-      var cachedTs = parseInt(localStorage.getItem(CACHE_TS_KEY) || '0');
-      var now = Date.now();
-
-      // キャッシュがあれば即時表示
-      if (cached) {
-        try {
-          initApp(JSON.parse(cached));
-        } catch(e) { cached = null; }
-      }
-
-      // キャッシュが古い or 無い場合のみAPIを叩く
-      if (!cached || (now - cachedTs > CACHE_TTL)) {
-        var controller = new AbortController();
-        var timeoutId = setTimeout(function() { controller.abort(); }, 8000); // 8秒タイムアウト
-
-        fetch(GAS_API_URL, { signal: controller.signal })
-          .then(function(res) { return res.json(); })
-          .then(function(data) {
-            clearTimeout(timeoutId);
-            if (!Array.isArray(data)) return;
-            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-            localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
-            if (!initialized) {
-              initApp(data);
-            } else {
-              updateCatalogSilently(data);
-            }
-          })
-          .catch(function(err) {
-            clearTimeout(timeoutId);
-            if (!initialized) {
-              document.getElementById('loadingScreen').innerHTML =
-                '<p style="color:#ff0055; text-align:center; padding:20px;">データの読み込みに失敗しました。<br><br>' +
-                '<button onclick="location.reload()" style="background:var(--neon);border:none;padding:10px 20px;border-radius:10px;font-weight:bold;cursor:pointer;">リロード</button></p>';
-            }
-          });
-      }
-    };
-
-    function switchMode(id) {
-      document.querySelectorAll('.mode-content').forEach(function(el) { el.classList.remove('active'); });
-      document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
-      document.getElementById(id).classList.add('active');
-      event.target.classList.add('active');
-    }
-
-    function renderQuiz() {
-      var item = qList[qIdx];
-      var card = document.getElementById('quizCard');
-      card.classList.remove('flipped');
-      document.getElementById('qFront').innerHTML = '<img src="' + item.image + '" decoding="async">';
-      document.getElementById('qBack').innerHTML =
-        '<div class="ans-inner" style="border:none;">' +
-          '<img src="' + item.image + '" class="ans-mini-img" decoding="async">' +
-          '<div class="ans-name">' + item.name + '</div>' +
-          '<div class="ans-desc">' + item.description + '</div>' +
+  // ===================== GRID =====================
+  function renderGrid(data) {
+    var collected = getCollected();
+    var count = collected.length;
+    document.getElementById('collectedCounter').innerHTML = '⭐ あつめた：' + count + ' 体';
+    document.getElementById('gridDisplay').innerHTML = data.map(function(item) {
+      var cid = String(item.id);
+      var isColl = collected.includes(cid);
+      var idx = catalog.indexOf(item);
+      return '<div class="thumb-card' + (isColl ? ' collected' : '') + '" data-char-id="' + cid + '" onclick="popDetail(' + idx + ')">' +
+        '<img src="' + getImgUrl(item.image) + '" loading="lazy" decoding="async">' +
+        '<span class="collected-badge">⭐</span>' +
         '</div>';
-    }
+    }).join('');
+  }
 
-    // 次の3枚をプリロード
-    function preloadAhead() {
-      for (var i = 1; i <= 3; i++) {
-        var next = qList[(qIdx + i) % qList.length];
-        if (next) { var img = new Image(); img.src = next.image; }
+  function filterGrid() {
+    var q = document.getElementById('searchInput').value.toLowerCase();
+    var filtered = q ? catalog.filter(i => i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q)) : catalog;
+    renderGrid(filtered);
+  }
+
+  function popDetail(idx) {
+    var item = catalog[idx];
+    if (!item) return;
+    var isColl = isCollected(item.id);
+    document.getElementById('modalBody').innerHTML =
+      '<div class="ans-inner">' +
+        '<img src="' + getImgUrl(item.image) + '" class="ans-mini-img" decoding="async">' +
+        '<div class="ans-name">' + item.name + '</div>' +
+        '<div class="ans-desc">' + item.description + '</div>' +
+        '<button class="collect-btn' + (isColl ? ' collected' : '') + '" id="collectBtn" onclick="toggleCollect(\'' + item.id + '\', this)">' +
+          (isColl ? '✅ もってる！' : '⭐ もってる！をおす') +
+        '</button>' +
+        '<div style="margin-top:14px;font-size:0.8rem;color:#aaa;">タップして もどる</div>' +
+      '</div>';
+    document.getElementById('modalOverlay').style.display = 'flex';
+  }
+
+  function toggleCollect(id, btn) {
+    var nowCollected = toggleCollected(id);
+    btn.classList.toggle('collected', nowCollected);
+    btn.textContent = nowCollected ? '✅ もってる！' : '⭐ もってる！をおす';
+    // Update grid card without full re-render
+    var card = document.querySelector('.thumb-card[data-char-id="' + String(id) + '"]');
+    if (card) {
+      card.classList.toggle('collected', nowCollected);
+    }
+    // Update counter
+    var clen = getCollected().length;
+    document.getElementById('collectedCounter').innerHTML = '⭐ あつめた：' + clen + ' 体';
+  }
+
+  function closePopDetail() {
+    document.getElementById('modalOverlay').style.display = 'none';
+  }
+
+  // ===================== PWA INSTALL UI =====================
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true;
+  }
+  function isIOS() {
+    return /iP(hone|ad|od)/.test(navigator.userAgent);
+  }
+
+  function setupInstallUI() {
+    if (isStandalone()) return; // Already installed
+
+    if (isIOS()) {
+      // iOS Safari: show guide after 3s on first visit
+      if (!localStorage.getItem('ios_install_shown')) {
+        setTimeout(function() {
+          document.getElementById('iosSheet').style.display = 'block';
+          localStorage.setItem('ios_install_shown', '1');
+        }, 3000);
       }
+    } else {
+      // Android: catch beforeinstallprompt
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        if (!localStorage.getItem('install_banner_dismissed')) {
+          document.getElementById('installBanner').style.display = 'flex';
+        } else {
+          document.getElementById('installFab').style.display = 'flex';
+        }
+      });
     }
+  }
 
-    function initSwipe() {
-      var startX = 0, startY = 0;
-      var zone = document.getElementById('swipeZone');
-      zone.addEventListener('touchstart', function(e) {
-        startX = e.touches[0].pageX;
-        startY = e.touches[0].pageY;
-      }, { passive: true });
-      zone.addEventListener('touchend', function(e) {
-        var dx = e.changedTouches[0].pageX - startX;
-        var dy = e.changedTouches[0].pageY - startY;
-        if (Math.abs(dx) < Math.abs(dy) * 1.2) return; // 縦スクロールは無視
-        if (dx < -60) { qIdx = (qIdx + 1) % qList.length; renderQuiz(); preloadAhead(); }
-        else if (dx > 60) { qIdx = (qIdx - 1 + qList.length) % qList.length; renderQuiz(); preloadAhead(); }
-      }, { passive: true });
-    }
+  function doInstall() {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(function() {
+      deferredInstallPrompt = null;
+      document.getElementById('installBanner').style.display = 'none';
+      document.getElementById('installFab').style.display = 'none';
+    });
+  }
 
-    function renderChoice() {
-      var target = catalog[Math.floor(Math.random() * catalog.length)];
-      var others = catalog.filter(function(i) { return i.id !== target.id; })
-        .sort(function() { return Math.random() - 0.5; }).slice(0, 2);
-      var options = [target].concat(others).sort(function() { return Math.random() - 0.5; });
-      document.getElementById('choicePrompt').innerText = '「' + target.name + '」はどれ？';
-      document.getElementById('choiceList').innerHTML = options.map(function(i) {
-        return '<div class="choice-btn" onclick="check(this,' + (i.id === target.id) + ')">' +
-          '<img src="' + i.image + '" decoding="async"></div>';
-      }).join('');
+  function dismissBanner() {
+    document.getElementById('installBanner').style.display = 'none';
+    localStorage.setItem('install_banner_dismissed', '1');
+    if (deferredInstallPrompt) {
+      document.getElementById('installFab').style.display = 'flex';
     }
+  }
 
-    function check(el, ok) {
-      var root = document.getElementById('bodyRoot');
-      if (ok) {
-        combo++;
-        el.style.borderColor = '#4cd964';
-        confetti({ particleCount: 100 + combo, spread: 70, origin: { y: 0.6 } });
-        updateRank();
-        setTimeout(renderChoice, 800);
-      } else {
-        combo = 0;
-        el.style.borderColor = '#ff3b30';
-        root.className = '';
-        updateRank();
-        setTimeout(function() { el.style.borderColor = 'transparent'; }, 400);
-      }
-    }
-
-    function updateRank() {
-      var label = document.getElementById('rankLabel');
-      var val = document.getElementById('comboVal');
-      var root = document.getElementById('bodyRoot');
-      val.innerText = combo;
-      if (combo >= 50) { label.innerText = 'ランク：【神】'; document.getElementById('masterScreen').style.display = 'flex'; }
-      else if (combo >= 40) { label.innerText = 'ランク：【極】'; root.className = 'rank-40'; }
-      else if (combo >= 30) { label.innerText = 'ランク：【金】'; root.className = 'rank-30'; }
-      else if (combo >= 20) { label.innerText = 'ランク：【銀】'; root.className = 'rank-20'; }
-      else if (combo >= 10) { label.innerText = 'ランク：【銅】'; root.className = 'rank-10'; }
-      else { label.innerText = 'ランク：なし'; }
-    }
-
-    function renderGrid(data) {
-      document.getElementById('gridDisplay').innerHTML = data.map(function(i) {
-        return '<div class="thumb-card" onclick="popPopDetail(' + catalog.indexOf(i) + ')">' +
-          '<img src="' + i.image + '" loading="lazy" decoding="async"></div>';
-      }).join('');
-    }
-
-    function popPopDetail(idx) {
-      var i = catalog[idx];
-      document.getElementById('modalBody').innerHTML =
-        '<div class="ans-inner">' +
-          '<img src="' + i.image + '" class="ans-mini-img" decoding="async">' +
-          '<div class="ans-name">' + i.name + '</div>' +
-          '<div class="ans-desc">' + i.description + '</div>' +
-          '<div style="margin-top:20px; font-size:0.8rem; color:#888;">タップして もどる</div>' +
-        '</div>';
-      document.getElementById('modalOverlay').style.display = 'flex';
-    }
-
-    function closePopDetail() {
-      document.getElementById('modalOverlay').style.display = 'none';
-    }
-
-    function filterGrid() {
-      var q = document.getElementById('searchInput').value.toLowerCase();
-      renderGrid(catalog.filter(function(i) {
-        return i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q);
-      }));
-    }
+  function closeIosSheet() {
+    document.getElementById('iosSheet').style.display = 'none';
+  }
   </script>
 </body>
 </html>
