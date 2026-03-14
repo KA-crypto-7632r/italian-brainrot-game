@@ -1,4 +1,4 @@
-const CACHE_NAME = 'brainrot-sw-v1';
+const CACHE_NAME = 'brainrot-sw-v2';
 const CONFETTI_URL = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js';
 
 // Install: pre-cache shell
@@ -52,19 +52,28 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
-  // Everything else: cache-first, fall back to network, update cache
+  // HTML pages: network-first so updates always land immediately
+  if (url.includes('.html') || url.endsWith('/') || url.split('?')[0].endsWith('/italian-brainrot-game')) {
+    event.respondWith(
+      fetch(event.request).then(function(response) {
+        var clone = response.clone();
+        caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
+        return response;
+      }).catch(function() { return caches.match(event.request); })
+    );
+    return;
+  }
+
+  // Everything else (images, JS libs): cache-first, update in background
   event.respondWith(
     caches.match(event.request).then(function(cached) {
       var networkFetch = fetch(event.request).then(function(response) {
         if (response && response.status === 200) {
           var clone = response.clone();
-          caches.open(CACHE_NAME).then(function(cache) {
-            cache.put(event.request, clone);
-          });
+          caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
         }
         return response;
       }).catch(function() { return cached; });
-
       return cached || networkFetch;
     })
   );
