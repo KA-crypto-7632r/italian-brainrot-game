@@ -1,6 +1,6 @@
 {
   "name": "イタリアンブレインロット図鑑",
-  "short_name": "ブレインロット",
+  "short_name": "図鑑ゲーム",
   "description": "全キャラを当てて連続正解でランクアップ！イタリアンブレインロット図鑑ゲーム",
   "start_url": "./",
   "scope": "./",
@@ -8,5 +8,9 @@
   "background_color": "#000428",
   "theme_color": "#00ffcc",
   "lang": "ja",
-  "orientation": "portrait-primary"
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
 }

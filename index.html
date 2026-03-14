@@ -41,7 +41,7 @@
   body {
     font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic', sans-serif;
     background: var(--bg); color: white;
-    margin: 0; padding: 0 0 120px 0; min-height: 100vh; overflow-x: hidden; transition: background 0.6s;
+    margin: 0; padding: 0 0 130px 0; min-height: 100vh; overflow-x: hidden; transition: background 0.6s;
   }
 
   /* Rank backgrounds */
@@ -117,10 +117,6 @@
     border: 2px solid var(--neon); background: rgba(0,0,0,0.6); color: white;
     margin-bottom: 10px; font-size: 1rem;
   }
-  #collectedCounter {
-    font-size: 0.9rem; color: var(--gold); margin-bottom: 10px;
-    font-weight: bold; text-align: center;
-  }
   .thumb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .thumb-card {
     background: white; aspect-ratio: 1; border-radius: 12px;
@@ -128,7 +124,7 @@
     padding: 5px; overflow: hidden; cursor: pointer;
     position: relative; border: 3px solid transparent; transition: border-color 0.2s;
   }
-  .thumb-card.collected { border-color: var(--gold); }
+  .thumb-card.collected { border-color: #ff6b6b; }
   .thumb-card img { width: 100%; height: 100%; object-fit: contain; }
   .collected-badge {
     position: absolute; top: 3px; right: 3px;
@@ -151,7 +147,7 @@
     margin-top: 16px; padding: 10px 22px; border-radius: 20px; border: 2px solid #ccc;
     background: #f5f5f5; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: all 0.2s;
   }
-  .collect-btn.collected { background: #fff8dc; border-color: var(--gold); color: #b8860b; }
+  .collect-btn.collected { background: #fff0f0; border-color: #ff6b6b; color: #cc2222; }
 
   /* Loading screen */
   .loading-screen {
@@ -246,8 +242,7 @@
 
     <!-- ZUKAN TAB -->
     <div id="mode-grid" class="mode-content">
-      <input type="text" id="searchInput" class="search-box" placeholder="🔍 なまえで さがしてみよう..." oninput="filterGrid()">
-      <div id="collectedCounter"></div>
+      <input type="text" id="searchInput" class="search-box" placeholder="🔍 なまえや とくちょうで さがそう（スイカ など）" oninput="filterGrid()">
       <div class="thumb-grid" id="gridDisplay"></div>
     </div>
 
@@ -282,6 +277,12 @@
     <button id="iosSheetClose" onclick="closeIosSheet()">とじる ✕</button>
   </div>
 
+  <div id="buyBar" style="position:fixed;bottom:0;left:0;right:0;z-index:7000;background:linear-gradient(90deg,#bf0000,#ff4400);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+    <span style="font-size:0.9rem;font-weight:bold;color:white;flex:1;">🛒 イタリアンブレインロット<br><span style="font-size:0.75rem;opacity:0.9;">エンボスシール 4枚セット</span></span>
+    <a href="https://item.rakuten.co.jp/felinebees/ibr-4set/" target="_blank" rel="noopener" style="background:white;color:#bf0000;padding:10px 20px;border-radius:25px;font-weight:bold;font-size:0.9rem;text-decoration:none;white-space:nowrap;">楽天で買う →</a>
+    <button onclick="document.getElementById('buyBar').style.display='none'" style="background:transparent;border:none;color:rgba(255,255,255,0.7);font-size:1.3rem;cursor:pointer;padding:0 4px;">✕</button>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <script>
   // ===================== CONFIG =====================
@@ -289,7 +290,7 @@
   const CACHE_KEY   = 'brainrot_catalog_v2';
   const CACHE_TS_KEY = 'brainrot_catalog_v2_ts';
   const CACHE_TTL   = 60 * 60 * 1000; // 1 hour
-  const COLLECTED_KEY = 'brainrot_collected';
+  const COLLECTED_KEY = 'brainrot_fav';
 
   // ===================== RANKS =====================
   const RANKS = [
@@ -319,7 +320,7 @@
   function getImgUrl(raw) {
     if (!raw) return '';
     const m = raw.match(/\/d\/([A-Za-z0-9_-]+)/);
-    return m ? `https://lh3.googleusercontent.com/d/${m[1]}=w400` : raw;
+    return m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w200' : raw;
   }
 
   // ===================== COLLECTION =====================
@@ -520,15 +521,13 @@
   // ===================== GRID =====================
   function renderGrid(data) {
     var collected = getCollected();
-    var count = collected.length;
-    document.getElementById('collectedCounter').innerHTML = '⭐ あつめた：' + count + ' 体';
     document.getElementById('gridDisplay').innerHTML = data.map(function(item) {
       var cid = String(item.id);
       var isColl = collected.includes(cid);
       var idx = catalog.indexOf(item);
       return '<div class="thumb-card' + (isColl ? ' collected' : '') + '" data-char-id="' + cid + '" onclick="popDetail(' + idx + ')">' +
         '<img src="' + getImgUrl(item.image) + '" loading="lazy" decoding="async">' +
-        '<span class="collected-badge">⭐</span>' +
+        '<span class="collected-badge">❤️</span>' +
         '</div>';
     }).join('');
   }
@@ -549,7 +548,7 @@
         '<div class="ans-name">' + item.name + '</div>' +
         '<div class="ans-desc">' + item.description + '</div>' +
         '<button class="collect-btn' + (isColl ? ' collected' : '') + '" id="collectBtn" onclick="toggleCollect(\'' + item.id + '\', this)">' +
-          (isColl ? '✅ もってる！' : '⭐ もってる！をおす') +
+          (isColl ? '❤️ すき！ ✓' : '❤️ すき！') +
         '</button>' +
         '<div style="margin-top:14px;font-size:0.8rem;color:#aaa;">タップして もどる</div>' +
       '</div>';
@@ -559,15 +558,12 @@
   function toggleCollect(id, btn) {
     var nowCollected = toggleCollected(id);
     btn.classList.toggle('collected', nowCollected);
-    btn.textContent = nowCollected ? '✅ もってる！' : '⭐ もってる！をおす';
+    btn.textContent = nowCollected ? '❤️ すき！ ✓' : '❤️ すき！';
     // Update grid card without full re-render
     var card = document.querySelector('.thumb-card[data-char-id="' + String(id) + '"]');
     if (card) {
       card.classList.toggle('collected', nowCollected);
     }
-    // Update counter
-    var clen = getCollected().length;
-    document.getElementById('collectedCounter').innerHTML = '⭐ あつめた：' + clen + ' 体';
   }
 
   function closePopDetail() {
